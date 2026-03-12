@@ -1,21 +1,31 @@
-# Netflix User Churn Analysis & Prediction
+# Netflix User Churn Analysis and Streamlit Deployment
 
-A machine learning project that analyzes Netflix user data to identify churn patterns and predict which users are likely to cancel their subscriptions.
+This project analyzes Netflix user behavior, trains churn prediction models, exports a bundled model artifact, and serves predictions through a Streamlit app.
 
-## Project Overview
+## Overview
 
-This project uses a dataset of **25,000 Netflix users** to build and compare classification models for churn prediction. Users inactive for more than 90 days are labeled as churned.
+- Dataset size: 25,000 Netflix users
+- Churn rule in the notebook: users inactive for more than 90 days are labeled as churned
+- Deployed artifact: `model/netflix_churn_model.pkl`
+- Deployed interface: `app.py`
 
-**Models trained:**
-- Logistic Regression
-- Random Forest
-- Gradient Boosting
+## Current Project Structure
 
-## Dataset
+```
+├── .streamlit/
+│   └── config.toml
+├── app.py
+├── data/
+│   └── netflix_users.csv
+├── model/
+│   └── netflix_churn_model.pkl
+├── noteook/
+│   └── netflix.ipynb
+├── README.md
+└── requirements.txt
+```
 
-- **Source:** `data/netflix_users.csv`
-- **Records:** 25,000 users
-- **Features:** 8
+## Dataset Features
 
 | Feature | Description |
 |---|---|
@@ -23,48 +33,69 @@ This project uses a dataset of **25,000 Netflix users** to build and compare cla
 | Name | User name |
 | Age | User age |
 | Country | Country of residence |
-| Subscription_Type | Subscription plan (Basic/Standard/Premium) |
+| Subscription_Type | Subscription plan |
 | Watch_Time_Hours | Total hours watched |
-| Favorite_Genre | Preferred content genre |
+| Favorite_Genre | Preferred genre |
 | Last_Login | Date of last login |
 
-## Project Structure
+## Model Pipeline
 
-```
-├── data/
-│   └── netflix_users.csv
-├── noteook/
-│   └── netflix.ipynb
-└── README.md
-```
+The notebook includes:
 
-## Notebook Workflow
+1. Data loading and exploration
+2. Feature engineering for churn labels
+3. Exploratory data analysis
+4. Preprocessing and label encoding
+5. Baseline model comparison
+6. SMOTE balancing
+7. XGBoost tuning
+8. Model export as a single bundled `.pkl`
 
-1. **Import Libraries** — pandas, numpy, sklearn, matplotlib, seaborn
-2. **Load & Explore Dataset** — shape, dtypes, missing values, summary statistics
-3. **Feature Engineering** — create `Days_Since_Login` and binary `Churned` label (>90 days = churned)
-4. **EDA** — churn distribution, age/watch time analysis, churn rates by subscription type, country, genre, correlation heatmap
-5. **Data Preprocessing** — drop non-predictive columns, label encoding, train-test split (80/20), feature scaling
-6. **Model Training** — Logistic Regression, Random Forest, Gradient Boosting with cross-validation
-7. **Model Evaluation** — classification reports, confusion matrices, ROC-AUC curves, metric comparison
-8. **Feature Importance** — Random Forest/Gradient Boosting importances, Logistic Regression coefficients
-9. **Best Model Selection** — selected based on F1 Score
+The bundled model file contains:
 
-## Tech Stack
+- tuned XGBoost classifier
+- StandardScaler
+- label encoders
+- feature name order
 
-- Python 3
-- pandas, numpy
-- scikit-learn
-- matplotlib, seaborn
+## Features Used in Deployment
 
-## How to Run
+The deployed Streamlit app predicts from these five model features:
 
-1. Clone the repository:
+- Age
+- Country
+- Subscription_Type
+- Watch_Time_Hours
+- Favorite_Genre
+
+## Run Locally
+
+1. Install dependencies:
+
    ```bash
-   git clone https://github.com/zKushal/Netflix_Churn_Analysis.git
+   pip install -r requirements.txt
    ```
-2. Install dependencies:
+
+2. Start the Streamlit app:
+
    ```bash
-   pip install pandas numpy scikit-learn matplotlib seaborn
+   streamlit run app.py
    ```
-3. Open and run `noteook/netflix.ipynb`
+
+3. Open the local URL shown in the terminal.
+
+## Deploy on Streamlit Cloud
+
+1. Push this repository to GitHub.
+2. Open Streamlit Community Cloud.
+3. Create a new app from the repository.
+4. Set the main file path to `app.py`.
+5. Deploy.
+
+Because `requirements.txt` and the bundled model artifact are already in the repo, no extra deployment steps are required.
+
+## Notes
+
+- The notebook remains the training workflow.
+- The Streamlit app is the inference workflow.
+- If you retrain the model, overwrite `model/netflix_churn_model.pkl` and redeploy.
