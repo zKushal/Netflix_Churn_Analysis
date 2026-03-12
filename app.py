@@ -14,6 +14,52 @@ st.set_page_config(
 MODEL_PATH = Path("model/netflix_churn_model.pkl")
 
 
+def inject_styles() -> None:
+    st.markdown(
+        """
+        <style>
+        .stApp {
+            background: linear-gradient(180deg, #f4f4f4 0%, #ececec 100%);
+        }
+        .block-container {
+            max-width: 860px;
+            padding-top: 2rem;
+            padding-bottom: 2rem;
+        }
+        .form-shell {
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 2rem 2rem 1.5rem 2rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid #e7e7e7;
+        }
+        .form-title {
+            text-align: center;
+            font-size: 3rem;
+            font-weight: 800;
+            color: #1f2937;
+            margin-bottom: 1.5rem;
+        }
+        .stButton > button,
+        .stFormSubmitButton > button {
+            background: #e50914;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 700;
+            min-height: 3.2rem;
+        }
+        .stButton > button:hover,
+        .stFormSubmitButton > button:hover {
+            background: #c40812;
+            color: white;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 @st.cache_resource
 def load_bundle() -> dict:
     if not MODEL_PATH.exists():
@@ -34,9 +80,22 @@ def build_feature_frame(bundle: dict, user_inputs: dict) -> pd.DataFrame:
     return pd.DataFrame([[encoded_inputs[name] for name in feature_names]], columns=feature_names)
 
 
+def parse_number(raw_value: str, field_name: str, *, integer: bool = False) -> float | int:
+    value = raw_value.strip()
+    if not value:
+        raise ValueError(f"{field_name} is required.")
+
+    try:
+        parsed = int(value) if integer else float(value)
+    except ValueError as exc:
+        number_type = "a whole number" if integer else "a valid number"
+        raise ValueError(f"{field_name} must be {number_type}.") from exc
+
+    return parsed
+
+
 def main() -> None:
-    st.title("Netflix Churn Prediction")
-    st.caption("Deployable Streamlit app using the bundled model artifact in model/netflix_churn_model.pkl")
+    inject_styles()
 
     try:
         bundle = load_bundle()
@@ -47,34 +106,59 @@ def main() -> None:
     model = bundle["model"]
     scaler = bundle["scaler"]
     label_encoders = bundle["label_encoders"]
+    st.markdown('<div class="form-shell">', unsafe_allow_html=True)
+    st.markdown('<div class="form-title">Netflix Churn Predictor</div>', unsafe_allow_html=True)
 
-    with st.sidebar:
-        st.subheader("Model Info")
-        st.write("Model: Tuned XGBoost")
-        st.write("Features used: 5")
-        st.write("Artifact: model/netflix_churn_model.pkl")
+    with st.form("prediction_form"):
+        age_input = st.text_input("Age:", placeholder="Enter age")
+        watch_time_input = st.text_input("Watch Time (Hours):", placeholder="Enter hours watched")
+        subscription_type = st.selectbox(
+            "Subscription Type:",
+            options=list(label_encoders["Subscription_Type"].classes_),
+            index=None,
+            placeholder="-- Select --",
+        )
+        favorite_genre = st.selectbox(
+            "Favorite Genre:",
+            options=list(label_encoders["Favorite_Genre"].classes_),
+            index=None,
+            placeholder="-- Select --",
+        )
+        country = st.selectbox(
+            "Country:",
+            options=list(label_encoders["Country"].classes_),
+            index=None,
+            placeholder="-- Select --",
+        )
+        days_since_last_login = st.text_input(
+            "Days Since Last Login:",
+            placeholder="Enter days",
+        )
+        submitted = st.form_submit_button("Predict Churn", type="primary", use_container_width=True)
 
-    st.subheader("User Profile")
+    st.markdown('</div>', unsafe_allow_html=True)
 
-    age = st.slider("Age", min_value=18, max_value=80, value=35)
-    watch_time_hours = st.slider(
-        "Watch Time Hours",
-        min_value=0.0,
-        max_value=1000.0,
-        value=120.0,
-        step=1.0,
-    )
-    country = st.selectbox("Country", options=list(label_encoders["Country"].classes_))
-    subscription_type = st.selectbox(
-        "Subscription Type",
-        options=list(label_encoders["Subscription_Type"].classes_),
-    )
-    favorite_genre = st.selectbox(
-        "Favorite Genre",
-        options=list(label_encoders["Favorite_Genre"].classes_),
-    )
+    if submitted:
+        missing_fields = []
+        if subscription_type is None:
+            missing_fields.append("Subscription Type")
+        if favorite_genre is None:
+            missing_fields.append("Favorite Genre")
+        if country is None:
+            missing_fields.append("Country")
 
-    if st.button("Predict Churn Risk", type="primary"):
+        if missing_fields:
+            st.error(f"Please select: {', '.join(missing_fields)}.")
+            st.stop()
+
+        try:
+            age = parse_number(age_input, "Age", integer=True)
+            watch_time_hours = parse_number(watch_time_input, "Watch Time (Hours)")
+            inactivity_days = parse_number(days_since_last_login, "Days Since Last Login", integer=True)
+        except ValueError as exc:
+            st.error(str(exc))
+            st.stop()
+
         raw_inputs = {
             "Age": age,
             "Country": country,
@@ -98,10 +182,11 @@ def main() -> None:
         st.progress(churn_probability)
 
         st.subheader("Input Summary")
-        st.dataframe(pd.DataFrame([raw_inputs]), use_container_width=True)
+        summary_inputs = raw_inputs | {"Days_Since_Last_Login": inactivity_days}
+        st.dataframe(pd.DataFrame([summary_inputs]), use_container_width=True)
 
         st.info(
-            "This app uses the saved training artifact directly. The churn label in the notebook was built from inactivity, but the deployed model predicts from demographic and usage features only."
+            "The form includes Days Since Last Login to match your desired UI. The current saved model still predicts using Age, Country, Subscription Type, Watch Time Hours, and Favorite Genre only."
         )
 
 
