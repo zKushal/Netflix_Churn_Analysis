@@ -1,387 +1,196 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Netflix Churn Predictor</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #141414;
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 30px 16px;
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 20px;
+      background-color: #f5f5f5;
     }
-
-    .card {
-      background: #1f1f1f;
-      border-radius: 16px;
-      padding: 40px 44px;
-      width: 100%;
-      max-width: 520px;
-      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
-      border: 1px solid #2a2a2a;
-    }
-
-    .logo {
-      color: #e50914;
-      font-size: 28px;
-      font-weight: 900;
-      letter-spacing: -1px;
-      margin-bottom: 4px;
-    }
-
-    h1 {
-      color: #ffffff;
-      font-size: 20px;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-
-    .subtitle {
-      color: #888;
-      font-size: 13px;
-      margin-bottom: 30px;
-    }
-
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-
-    .form-group {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .form-group.full { grid-column: 1 / -1; }
-
-    label {
-      color: #aaa;
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 6px;
-    }
-
-    input, select {
-      background: #2a2a2a;
-      border: 1px solid #3a3a3a;
+    .container {
+      background: white;
+      padding: 30px;
       border-radius: 8px;
-      color: #fff;
-      font-size: 14px;
-      padding: 10px 14px;
-      outline: none;
-      transition: border-color 0.2s;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
     }
-
-    input:focus, select:focus { border-color: #e50914; }
-
-    select option { background: #2a2a2a; }
-
-    .hint {
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
       color: #555;
-      font-size: 11px;
-      margin-top: 4px;
     }
-
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
     button {
       width: 100%;
-      margin-top: 24px;
-      padding: 14px;
-      background: #e50914;
-      color: #fff;
-      font-size: 15px;
-      font-weight: 700;
+      padding: 12px;
+      background-color: #e50914;
+      color: white;
       border: none;
-      border-radius: 8px;
+      border-radius: 4px;
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      letter-spacing: 0.3px;
+      margin-top: 20px;
     }
-
-    button:hover  { background: #c40812; }
-    button:active { transform: scale(0.98); }
-
-    /* Result panel */
+    button:hover {
+      background-color: #c40812;
+    }
     #result {
       display: none;
-      margin-top: 24px;
-      border-radius: 12px;
-      padding: 20px 24px;
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 4px;
       text-align: center;
     }
-
     #result.churn {
-      background: rgba(229, 9, 20, 0.12);
-      border: 1px solid rgba(229, 9, 20, 0.35);
+      background-color: #ffebee;
+      border: 2px solid #e74c3c;
+      color: #e74c3c;
     }
-
     #result.active {
-      background: rgba(46, 204, 113, 0.10);
-      border: 1px solid rgba(46, 204, 113, 0.30);
-    }
-
-    .result-label {
-      font-size: 13px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 6px;
-    }
-
-    .churn  .result-label { color: #e74c3c; }
-    .active .result-label { color: #2ecc71; }
-
-    .result-verdict {
-      font-size: 22px;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 4px;
-    }
-
-    .result-prob {
-      font-size: 13px;
-      color: #999;
-      margin-bottom: 14px;
-    }
-
-    /* Probability bar */
-    .bar-track {
-      background: #333;
-      border-radius: 99px;
-      height: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-    }
-
-    .bar-fill {
-      height: 100%;
-      border-radius: 99px;
-      transition: width 0.8s ease;
-    }
-
-    .churn  .bar-fill { background: #e74c3c; }
-    .active .bar-fill { background: #2ecc71; }
-
-    .result-tips {
-      font-size: 12px;
-      color: #888;
-      line-height: 1.6;
-      text-align: left;
-    }
-
-    .result-tips strong { color: #ccc; }
-
-    .divider {
-      border: none;
-      border-top: 1px solid #2a2a2a;
-      margin: 28px 0 0;
-    }
-
-    .footer {
-      color: #444;
-      font-size: 11px;
-      text-align: center;
-      margin-top: 16px;
+      background-color: #e8f5e9;
+      border: 2px solid #2ecc71;
+      color: #2ecc71;
     }
   </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">NETFLIX</div>
-  <h1>Churn Risk Predictor</h1>
-  <p class="subtitle">Fill in the user profile below to estimate churn probability.</p>
-
+<div class="container">
+  <h1>Netflix Churn Predictor</h1>
+  
   <form id="churnForm">
-    <div class="form-grid">
-
-      <div class="form-group">
-        <label for="age">Age</label>
-        <input type="number" id="age" min="10" max="100" placeholder="e.g. 32" required />
-      </div>
-
-      <div class="form-group">
-        <label for="watch_time">Watch Time (Hours)</label>
-        <input type="number" id="watch_time" min="0" max="2000" step="0.5" placeholder="e.g. 150" required />
-        <span class="hint">Total hours watched on the platform</span>
-      </div>
-
-      <div class="form-group">
-        <label for="subscription">Subscription Type</label>
-        <select id="subscription" required>
-          <option value="" disabled selected>Select plan</option>
-          <option value="Basic">Basic</option>
-          <option value="Standard">Standard</option>
-          <option value="Premium">Premium</option>
-        </select>
-      </div>
-
-      <div class="form-group">
-        <label for="genre">Favorite Genre</label>
-        <select id="genre" required>
-          <option value="" disabled selected>Select genre</option>
-          <option value="Action">Action</option>
-          <option value="Comedy">Comedy</option>
-          <option value="Documentary">Documentary</option>
-          <option value="Drama">Drama</option>
-          <option value="Horror">Horror</option>
-          <option value="Romance">Romance</option>
-          <option value="Sci-Fi">Sci-Fi</option>
-          <option value="Thriller">Thriller</option>
-        </select>
-      </div>
-
-      <div class="form-group full">
-        <label for="country">Country</label>
-        <select id="country" required>
-          <option value="" disabled selected>Select country</option>
-          <option value="Australia">Australia</option>
-          <option value="Brazil">Brazil</option>
-          <option value="Canada">Canada</option>
-          <option value="France">France</option>
-          <option value="Germany">Germany</option>
-          <option value="India">India</option>
-          <option value="Japan">Japan</option>
-          <option value="Mexico">Mexico</option>
-          <option value="South Korea">South Korea</option>
-          <option value="Spain">Spain</option>
-          <option value="United Kingdom">United Kingdom</option>
-          <option value="United States">United States</option>
-        </select>
-      </div>
-
-      <div class="form-group full">
-        <label for="days_inactive">Days Since Last Login</label>
-        <input type="number" id="days_inactive" min="0" max="1000" placeholder="e.g. 45" required />
-        <span class="hint">How many days ago was the user's last activity?</span>
-      </div>
-
+    <div class="form-group">
+      <label for="age">Age:</label>
+      <input type="number" id="age" min="10" max="100" placeholder="Enter age" required>
     </div>
 
-    <button type="submit">Predict Churn Risk</button>
+    <div class="form-group">
+      <label for="watch_time">Watch Time (Hours):</label>
+      <input type="number" id="watch_time" min="0" max="2000" step="0.5" placeholder="Enter hours watched" required>
+    </div>
+
+    <div class="form-group">
+      <label for="subscription">Subscription Type:</label>
+      <select id="subscription" required>
+        <option value="">-- Select --</option>
+        <option value="Basic">Basic</option>
+        <option value="Standard">Standard</option>
+        <option value="Premium">Premium</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="genre">Favorite Genre:</label>
+      <select id="genre" required>
+        <option value="">-- Select --</option>
+        <option value="Action">Action</option>
+        <option value="Comedy">Comedy</option>
+        <option value="Documentary">Documentary</option>
+        <option value="Drama">Drama</option>
+        <option value="Horror">Horror</option>
+        <option value="Romance">Romance</option>
+        <option value="Sci-Fi">Sci-Fi</option>
+        <option value="Thriller">Thriller</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="country">Country:</label>
+      <select id="country" required>
+        <option value="">-- Select --</option>
+        <option value="Australia">Australia</option>
+        <option value="Brazil">Brazil</option>
+        <option value="Canada">Canada</option>
+        <option value="France">France</option>
+        <option value="Germany">Germany</option>
+        <option value="India">India</option>
+        <option value="Japan">Japan</option>
+        <option value="Mexico">Mexico</option>
+        <option value="South Korea">South Korea</option>
+        <option value="Spain">Spain</option>
+        <option value="United Kingdom">United Kingdom</option>
+        <option value="United States">United States</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="days_inactive">Days Since Last Login:</label>
+      <input type="number" id="days_inactive" min="0" max="1000" placeholder="Enter days" required>
+    </div>
+
+    <button type="submit">Predict Churn</button>
   </form>
 
   <div id="result">
-    <div class="result-label" id="resultLabel"></div>
-    <div class="result-verdict" id="resultVerdict"></div>
-    <div class="result-prob" id="resultProb"></div>
-    <div class="bar-track">
-      <div class="bar-fill" id="barFill" style="width:0%"></div>
-    </div>
-    <div class="result-tips" id="resultTips"></div>
+    <div id="resultText"></div>
+    <div id="resultProb" style="margin-top: 10px; font-size: 18px;"></div>
   </div>
-
-  <hr class="divider" />
-  <p class="footer">Model: Tuned XGBoost · Trained on 25,000 Netflix users · SMOTE-balanced</p>
 </div>
 
 <script>
-  /*
-   * Client-side scoring function.
-   * This replicates the approximate decision boundary learned by the
-   * XGBoost model from the notebook (feature weights derived from
-   * SHAP analysis and logistic coefficients).
-   *
-   * For production use, replace this with a fetch() call to a
-   * Python backend (Flask / FastAPI) that loads xgb_churn_model.pkl.
-   */
-
   function scoreUser(age, watchTime, subscription, genre, country, daysInactive) {
     let score = 0;
-
-    // --- Days since last login (strongest signal) ---
-    if (daysInactive > 90)       score += 0.55;
-    else if (daysInactive > 60)  score += 0.30;
-    else if (daysInactive > 30)  score += 0.10;
-    else                         score -= 0.10;
-
-    // --- Watch time (higher watch time = more engaged but can also churn) ---
-    if (watchTime < 50)          score += 0.20;
-    else if (watchTime < 150)    score += 0.05;
-    else if (watchTime < 400)    score -= 0.05;
-    else                         score -= 0.10;
-
-    // --- Age ---
-    if (age < 25)                score += 0.08;
-    else if (age < 35)           score += 0.03;
-    else if (age < 50)           score -= 0.03;
-    else                         score -= 0.08;
-
-    // --- Subscription type ---
+    
+    if (daysInactive > 90) score += 0.55;
+    else if (daysInactive > 60) score += 0.30;
+    else if (daysInactive > 30) score += 0.10;
+    else score -= 0.10;
+    
+    if (watchTime < 50) score += 0.20;
+    else if (watchTime < 150) score += 0.05;
+    else if (watchTime < 400) score -= 0.05;
+    else score -= 0.10;
+    
+    if (age < 25) score += 0.08;
+    else if (age < 35) score += 0.03;
+    else if (age < 50) score -= 0.03;
+    else score -= 0.08;
+    
     const subMap = { 'Basic': 0.10, 'Standard': 0.03, 'Premium': -0.05 };
     score += subMap[subscription] || 0;
-
-    // --- Genre (minor signal) ---
-    const highChurnGenres  = ['Horror', 'Thriller'];
-    const lowChurnGenres   = ['Drama', 'Documentary', 'Romance'];
-    if (highChurnGenres.includes(genre))  score += 0.04;
-    if (lowChurnGenres.includes(genre))   score -= 0.04;
-
-    // --- Country (minor signal) ---
-    const highChurnCountries = ['Brazil', 'Mexico', 'India'];
-    const lowChurnCountries  = ['Japan', 'South Korea', 'Germany'];
-    if (highChurnCountries.includes(country))  score += 0.04;
-    if (lowChurnCountries.includes(country))   score -= 0.04;
-
-    // Sigmoid to probability [0, 1]
+    
     const prob = 1 / (1 + Math.exp(-score * 4));
     return Math.min(Math.max(prob, 0.02), 0.98);
   }
 
-  function tips(churned, daysInactive, watchTime, subscription) {
-    if (churned) {
-      const suggestions = [];
-      if (daysInactive > 90)
-        suggestions.push('<strong>Re-engagement email:</strong> User has been inactive for over 90 days — send a personalised "We miss you" campaign.');
-      if (watchTime < 50)
-        suggestions.push('<strong>Content discovery:</strong> Low watch time suggests the user hasn\'t found content they like — recommend personalised titles.');
-      if (subscription === 'Basic')
-        suggestions.push('<strong>Upgrade offer:</strong> Offer a discounted Standard/Premium trial to increase value perception.');
-      if (!suggestions.length)
-        suggestions.push('<strong>Retention offer:</strong> Consider a limited-time discount or free month to prevent cancellation.');
-      return suggestions.join('<br/>');
-    } else {
-      return '<strong>Low risk:</strong> This user is engaged and unlikely to churn. Continue delivering relevant content recommendations.';
-    }
-  }
-
-  document.getElementById('churnForm').addEventListener('submit', function (e) {
+  document.getElementById('churnForm').addEventListener('submit', function(e) {
     e.preventDefault();
-
-    const age          = parseInt(document.getElementById('age').value);
-    const watchTime    = parseFloat(document.getElementById('watch_time').value);
+    
+    const age = parseInt(document.getElementById('age').value);
+    const watchTime = parseFloat(document.getElementById('watch_time').value);
     const subscription = document.getElementById('subscription').value;
-    const genre        = document.getElementById('genre').value;
-    const country      = document.getElementById('country').value;
     const daysInactive = parseInt(document.getElementById('days_inactive').value);
-
-    const prob    = scoreUser(age, watchTime, subscription, genre, country, daysInactive);
+    
+    const prob = scoreUser(age, watchTime, subscription, '', '', daysInactive);
+    const pct = Math.round(prob * 100);
     const churned = prob >= 0.5;
-    const pct     = Math.round(prob * 100);
-
-    const resultEl  = document.getElementById('result');
-    const labelEl   = document.getElementById('resultLabel');
-    const verdictEl = document.getElementById('resultVerdict');
-    const probEl    = document.getElementById('resultProb');
-    const barEl     = document.getElementById('barFill');
-    const tipsEl    = document.getElementById('resultTips');
-
-    resultEl.className  = churned ? 'churn' : 'active';
-    labelEl.textContent = churned ? '⚠ High Churn Risk' : '✓ Low Churn Risk';
-    verdictEl.textContent = churned ? 'Likely to Churn' : 'Likely Active';
-    probEl.textContent  = `Estimated churn probability: ${pct}%`;
-    tipsEl.innerHTML    = tips(churned, daysInactive, watchTime, subscription);
+    
+    const resultEl = document.getElementById('result');
+    const textEl = document.getElementById('resultText');
+    const probEl = document.getElementById('resultProb');
+    
+    resultEl.className = churned ? 'churn' : 'active';
+    textEl.textContent = churned ? 'High Churn Risk' : 'Low Churn Risk';
+    probEl.textContent = 'Probability: ' + pct + '%';
     resultEl.style.display = 'block';
-
-    // Animate bar after render
-    setTimeout(() => { barEl.style.width = pct + '%'; }, 50);
   });
 </script>
 </body>
